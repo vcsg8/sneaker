@@ -12,6 +12,8 @@ export type SettingsStoreData = {
     trackTrailLength?: number;
     groundUnitMode?: GroundUnitMode;
   };
+  showAircraftTypeInTrackNames: boolean;
+  coalition: string; // 'Allies' or 'Enemies'
 };
 
 export const settingsStore = create<SettingsStoreData>(() => {
@@ -26,6 +28,8 @@ export const settingsStore = create<SettingsStoreData>(() => {
       trackTrailLength: 9,
       groundUnitMode: GroundUnitMode.FRIENDLY,
     },
+    showAircraftTypeInTrackNames: true,
+    coalition: "Allies",
   };
 });
 

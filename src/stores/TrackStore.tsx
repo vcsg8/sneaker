@@ -36,6 +36,7 @@ export type TrackStoreData = {
   tracks: Immutable.Map<number, Array<EntityTrackPing>>;
   trackOptions: Immutable.Map<number, TrackOptions>;
   alertTriggers: Immutable.Set<string>;
+  trackIds: Immutable.Map<number, string>;
   config: { numPreviousPings: number };
 };
 
@@ -83,6 +84,7 @@ export const trackStore = create<TrackStoreData>(() => {
     tracks: Immutable.Map<number, Array<EntityTrackPing>>(),
     trackOptions: Immutable.Map<number, TrackOptions>(),
     alertTriggers: Immutable.Set<string>(),
+    trackIds: Immutable.Map<number, string>(),
     config: {
       numPreviousPings: DEFAULT_NUM_PREVIOUS_PINGS,
     },
@@ -110,6 +112,7 @@ export function createTracks(event: SneakerInitialStateEvent) {
 
 export function updateTracks(event: SneakerRadarSnapshotEvent) {
   trackStore.setState((state) => {
+    const deletedIds = (event.d.deleted || []).filter((id: any) => typeof id === 'number');
     return {
       ...state,
       tracks: state.tracks.withMutations((obj) => {
@@ -127,9 +130,9 @@ export function updateTracks(event: SneakerRadarSnapshotEvent) {
           ]);
         }
 
-        obj.deleteAll(event.d.deleted);
+        obj.deleteAll(deletedIds);
       }),
-      trackOptions: state.trackOptions.deleteAll(event.d.deleted),
+      trackOptions: state.trackOptions.deleteAll(deletedIds),
     };
   });
 }
@@ -172,3 +175,24 @@ setTimeout(() => {
     };
   });
 }, 1000);
+
+// Generate a random 5-digit track ID
+function generateTrackId(): string {
+  return Math.floor(10000 + Math.random() * 90000).toString();
+}
+
+// Get or create a consistent track ID for an entity
+export function getTrackId(entityId: number): string {
+  const state = trackStore.getState();
+  let trackId = state.trackIds.get(entityId);
+  
+  if (!trackId) {
+    const newId = generateTrackId();
+    trackStore.setState((state) => ({
+      ...state,
+      trackIds: state.trackIds.set(entityId, newId),
+    }));
+    return newId;
+  }
+  return trackId;
+}

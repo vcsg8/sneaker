@@ -6,12 +6,49 @@ import { AboutSettings } from "./AboutSettings";
 import { DebugSettings } from "./DebugSettings";
 import { MapSettings } from "./MapSettings";
 import { ProfileSettings } from "./ProfileSettings";
+import { settingsStore } from "../stores/SettingsStore";
 
 type SettingsTabs = "home" | "map" | "profiles" | "debug" | "about";
 
 function SettingsHome() {
+  const settings = settingsStore((state) => state);
+  const setSettings = (newSettings: Partial<typeof settings>) => {
+    settingsStore.setState((state) => ({ ...state, ...newSettings }));
+  };
+
   return (
     <div className="flex flex-col gap-2 text-center mt-auto">
+      <div className="p-2 border-b border-gray-300">
+        <div className="text-sm font-semibold mb-2">Track Display</div>
+        <div className="flex flex-row items-center gap-2">
+          <input
+            type="checkbox"
+            id="showAircraftTypeInTrackNames"
+            checked={settings.showAircraftTypeInTrackNames}
+            onChange={(e) =>
+              setSettings({ showAircraftTypeInTrackNames: e.target.checked })
+            }
+          />
+          <label htmlFor="showAircraftTypeInTrackNames" className="text-sm">
+            Show aircraft type in track names
+          </label>
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          When enabled, track names show as "12345 (F/A-18C)". When disabled, only the track ID is shown.
+        </div>
+        <div className="flex flex-row items-center gap-2 mt-4">
+          <label htmlFor="coalition-select" className="text-sm font-semibold">Coalition:</label>
+          <select
+            id="coalition-select"
+            value={settings.coalition}
+            onChange={e => setSettings({ coalition: e.target.value })}
+            className="form-select border rounded-sm p-1 border-gray-400"
+          >
+            <option value="Enemies">Blue (Allies)</option>
+            <option value="Allies">Red (Enemies)</option>
+          </select>
+        </div>
+      </div>
       <Link
         to="/"
         className="bg-red-100 border-red-300 text-red-400 border ml-2 p-1"

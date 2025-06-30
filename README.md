@@ -10,6 +10,38 @@ A live example of Sneaker can be viewed [here](https://hoggit.brrt.me/).
 
 ![UI preview](https://i.imgur.com/wkrZ4JU.png)
 
+## Features
+
+- Real-time track display with consistent random 5-digit IDs
+- Configurable track naming (ID only or ID with aircraft type)
+- Coalition-based color coding (blue for enemy, red for friendly)
+- Track history trails
+- Speed and altitude display
+- Threat and warning radius circles
+- Entity tagging system
+- Discord integration for GCI coordination
+- Multiple map support (Caucasus, Syria, Persian Gulf, Marianas)
+
+## Track Naming System
+
+Sneaker now uses a consistent random 5-digit ID system for track identification instead of aircraft types. This provides several benefits:
+
+- **Consistent Identification**: Each track gets a unique 5-digit ID that persists throughout the session
+- **Reduced Clutter**: Track names are shorter and more readable
+- **Privacy**: Aircraft types can be hidden for training scenarios
+- **Flexibility**: Users can choose to show or hide aircraft type information
+
+### Track Name Formats
+
+- **ID Only**: `12345` (when aircraft type display is disabled)
+- **ID with Aircraft Type**: `12345 (F/A-18C)` (when aircraft type display is enabled)
+- **With Pilot Name**: `PilotName 12345 (F/A-18C)` (when pilot information is available)
+- **With NATO Name**: `Hornet 12345 (F/A-18C)` (when NATO names are available)
+
+### Configuration
+
+In the Settings panel, you can toggle "Show aircraft type in track names" to control whether aircraft types are displayed in parentheses after the track ID.
+
 ## Installation
 
 1. Download the latest released version [from here](https://github.com/b1naryth1ef/sneaker/releases).

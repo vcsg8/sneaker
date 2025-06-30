@@ -28,6 +28,9 @@ import {
   getBearingMap,
   getCardinal,
   getFlyDistance,
+  getTrackName,
+  getDetailedTrackName,
+  getDisplayTrackName,
 } from "../util";
 import { Console } from "./Console";
 import { EntityInfo, iconCache, MapSimpleEntity } from "./MapEntity";
@@ -65,9 +68,11 @@ function MapRadarTracks({
   selectedEntityId: number | null;
 }) {
   const radarTracks = trackStore((state) => state.tracks.entrySeq().toArray());
-  const triggeredEntityIds = alertStore((state) =>
+  const triggeredEntities = alertStore((state) =>
     state.triggeredEntities.keySeq().toSet()
   );
+  const showAircraftType = settingsStore((state) => state.showAircraftTypeInTrackNames);
+  const userCoalition = settingsStore((state) => state.coalition);
 
   useEffect(() => {
     const settings = settingsStore.getState();
@@ -150,12 +155,7 @@ function MapRadarTracks({
 
       const nameGeo = nameLayer.getGeometryById(entityId) as maptalks.Label;
       if (!nameGeo) {
-        let name = entity.name;
-        if (entity.pilot && !entity.pilot.startsWith(entity.group)) {
-          name = `${entity.pilot} (${name})`;
-        } else if (planes[entity.name]?.natoName !== undefined) {
-          name = `${planes[entity.name].natoName} (${entity.name})`;
-        }
+        const name = getDisplayTrackName(entity, userCoalition, showAircraftType);
 
         let color = entity.coalition !== "Allies" ? "#17c2f6" : "#ff8080";
         if (trackOptions?.watching) {
@@ -191,8 +191,11 @@ function MapRadarTracks({
         });
         nameLayer.addGeometry(nameLabel);
       } else {
+        const name = getDisplayTrackName(entity, userCoalition, showAircraftType);
+        (nameGeo.setContent as any)(name);
+        
         const symbol = nameGeo.getSymbol();
-        if (triggeredEntityIds.has(entity.id)) {
+        if (triggeredEntities.has(entity.id)) {
           if ((symbol as any).markerLineWidth !== 4) {
             nameGeo.setSymbol({
               ...symbol,
@@ -508,7 +511,7 @@ function MapRadarTracks({
         // TODO: idk
       }
     }
-  }, [radarTracks, triggeredEntityIds]);
+  }, [radarTracks, triggeredEntities]);
 
   useEffect(() => {
     const alertLayer = map.getLayer(

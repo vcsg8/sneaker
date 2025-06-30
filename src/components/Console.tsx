@@ -11,10 +11,13 @@ import {
 } from "../stores/TrackStore";
 import { Entity } from "../types/entity";
 import DrawConsoleTab from "./DrawConsoleTab";
+import { getTrackName, getDetailedTrackName } from "../util";
+import { settingsStore } from "../stores/SettingsStore";
 
 function WatchTab({ map }: { map: maptalks.Map }) {
   const trackState = trackStore((state) => state);
   const entities = serverStore((state) => state.entities);
+  const showAircraftType = settingsStore((state) => state.showAircraftTypeInTrackNames);
 
   const watches = trackState.trackOptions
     .entrySeq()
@@ -46,7 +49,9 @@ function WatchTab({ map }: { map: maptalks.Map }) {
         <div className="my-2 flex flex-col gap-1">
           {watches.map((data) => {
             return (
-              <button
+              <div
+                key={data!.entity.id}
+                className="p-2 border-b border-gray-300 cursor-pointer hover:bg-gray-100"
                 onClick={() => {
                   setSelectedEntityId(data!.entity.id);
                   map.animateTo(
@@ -60,10 +65,9 @@ function WatchTab({ map }: { map: maptalks.Map }) {
                     }
                   );
                 }}
-                className="p-1 bg-indigo-100 hover:border-indigo-300 hover:bg-indigo-200 border-indigo-200 border rounded-sm"
               >
-                {data!.entity.name} ({data!.entity.pilot || ""})
-              </button>
+                {getDetailedTrackName(data!.entity, showAircraftType)} - {Math.round(estimatedSpeed(data!.track))} kts
+              </div>
             );
           })}
         </div>
@@ -74,6 +78,7 @@ function WatchTab({ map }: { map: maptalks.Map }) {
 
 function SearchTab({ map }: { map: maptalks.Map }) {
   const [search, setSearch] = useState("");
+  const showAircraftType = settingsStore((state) => state.showAircraftTypeInTrackNames);
 
   const entityMetadata = entityMetadataStore((state) => state.entities);
   const matchFn = useMemo(() => {
@@ -124,8 +129,15 @@ function SearchTab({ map }: { map: maptalks.Map }) {
       {search !== "" && matchedEntities && (
         <div className="my-2 flex flex-col gap-1">
           {targetEntities.map((entity) => {
+            const track = tracks.get(entity.id);
+            if (!track) {
+              return null;
+            }
+
             return (
-              <button
+              <div
+                key={entity.id}
+                className="p-2 border-b border-gray-300 cursor-pointer hover:bg-gray-100"
                 onClick={() => {
                   setSelectedEntityId(entity.id);
                   map.animateTo(
@@ -139,10 +151,9 @@ function SearchTab({ map }: { map: maptalks.Map }) {
                     }
                   );
                 }}
-                className="bg-indigo-100 hover:border-indigo-300 hover:bg-indigo-200 border-indigo-200 border rounded-sm"
               >
-                {entity.name} ({entity.pilot || ""})
-              </button>
+                {getDetailedTrackName(entity, showAircraftType)} - {Math.round(estimatedSpeed(track))} kts
+              </div>
             );
           })}
         </div>

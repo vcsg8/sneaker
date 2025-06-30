@@ -1,4 +1,7 @@
 import { DCSMap } from "./dcs/maps/DCSMap";
+import { getTrackId } from "./stores/TrackStore";
+import { planes } from "./dcs/aircraft";
+import { Entity } from "./types/entity";
 
 const toRad = (n: number) => {
   return (n * Math.PI) / 180;
@@ -110,32 +113,10 @@ function getBearing(
   return (degrees(Math.atan2(dLong, dPhi)) + 360.0) % 360.0;
 }
 
-export function getCardinal(angle: number) {
-  const degreePerDirection = 360 / 8;
-  const offsetAngle = angle + degreePerDirection / 2;
-
-  return offsetAngle >= 0 * degreePerDirection &&
-    offsetAngle < 1 * degreePerDirection
-    ? "N"
-    : offsetAngle >= 1 * degreePerDirection &&
-      offsetAngle < 2 * degreePerDirection
-    ? "NE"
-    : offsetAngle >= 2 * degreePerDirection &&
-      offsetAngle < 3 * degreePerDirection
-    ? "E"
-    : offsetAngle >= 3 * degreePerDirection &&
-      offsetAngle < 4 * degreePerDirection
-    ? "SE"
-    : offsetAngle >= 4 * degreePerDirection &&
-      offsetAngle < 5 * degreePerDirection
-    ? "S"
-    : offsetAngle >= 5 * degreePerDirection &&
-      offsetAngle < 6 * degreePerDirection
-    ? "SW"
-    : offsetAngle >= 6 * degreePerDirection &&
-      offsetAngle < 7 * degreePerDirection
-    ? "W"
-    : "NW";
+export function getCardinal(degrees: number): string {
+  const cardinals = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  const index = Math.round(degrees / 22.5) % 16;
+  return cardinals[index];
 }
 
 export function getFlyDistance(
@@ -167,9 +148,11 @@ export function formatCounter(seconds: number): string {
 }
 
 export function route(path: string): string {
-  return process.env.NODE_ENV === "production"
-    ? `/api${path}`
-    : `http://localhost:7789/api${path}`;
+  // Simple check for development vs production
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isDevelopment
+    ? `http://localhost:7788/api${path}`
+    : `/api${path}`;
 }
 
 export function getBearingMap(
@@ -227,4 +210,67 @@ export function formatDDM([lat, lng]: [number, number]) {
   const longitude = toDegreesDecimalMinutes(lng, 3);
   const longitudeCardinal = lng >= 0 ? "E" : "W";
   return `${latitudeCardinal}${latitude} ${longitudeCardinal}${longitude}`;
+}
+
+/**
+ * Generate a consistent track name with random ID
+ * @param entity The entity to generate a name for
+ * @param showAircraftType Whether to include aircraft type in parentheses
+ * @returns Formatted track name like "12345" or "12345 (F/A-18C)"
+ */
+export function getTrackName(entity: Entity, showAircraftType: boolean = false): string {
+  const trackId = getTrackId(entity.id);
+  
+  if (!showAircraftType) {
+    return trackId;
+  }
+  
+  // Include aircraft type in parentheses if available
+  const aircraftType = entity.name;
+  if (aircraftType && planes[aircraftType]) {
+    return `${trackId} (${aircraftType})`;
+  }
+  
+  return trackId;
+}
+
+/**
+ * Generate a detailed track name with pilot info if available
+ * @param entity The entity to generate a name for
+ * @param showAircraftType Whether to include aircraft type
+ * @returns Formatted track name with pilot info
+ */
+export function getDetailedTrackName(entity: Entity, showAircraftType: boolean = true): string {
+  const trackId = getTrackId(entity.id);
+  
+  // If pilot name is available and doesn't start with group name, use pilot name
+  if (entity.pilot && !entity.pilot.startsWith(entity.group)) {
+    const aircraftInfo = showAircraftType ? ` (${entity.name})` : '';
+    return `${entity.pilot} ${trackId}${aircraftInfo}`;
+  }
+  
+  // Use NATO name if available
+  if (planes[entity.name]?.natoName !== undefined) {
+    const aircraftInfo = showAircraftType ? ` (${entity.name})` : '';
+    return `${planes[entity.name].natoName} ${trackId}${aircraftInfo}`;
+  }
+  
+  // Fallback to track ID with aircraft type
+  return getTrackName(entity, showAircraftType);
+}
+
+/**
+ * Get the display name for a track based on coalition logic
+ * @param entity The entity to generate a name for
+ * @param userCoalition The user's coalition ("Allies" or "Enemies")
+ * @param showAircraftType Whether to include aircraft type in parentheses (for own coalition)
+ * @returns The display name for the track
+ */
+export function getDisplayTrackName(entity: Entity, userCoalition: string, showAircraftType: boolean): string {
+  // If the entity is the user's coalition, show the detailed track name
+  if (entity.coalition === userCoalition) {
+    return getDetailedTrackName(entity, showAircraftType);
+  }
+  // If the entity is not the user's coalition, show only the 5-digit ID
+  return getTrackId(entity.id);
 }

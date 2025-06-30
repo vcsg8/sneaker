@@ -11,6 +11,7 @@ import { PersianGulf } from "./dcs/maps/PersianGulf";
 import { Syria } from "./dcs/maps/Syria";
 import { Server, serverStore } from "./stores/ServerStore";
 import { route } from "./util";
+import { settingsStore } from "./stores/SettingsStore";
 
 type ServerMetadata = {
   name: string;
@@ -146,7 +147,43 @@ function ServerContainer({ serverName }: { serverName: string }) {
   return <Map dcsMap={dcsMap} />;
 }
 
-function App() {
+function CoalitionModal({ onSelect }: { onSelect: (coalition: string) => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded shadow-lg p-6 flex flex-col items-center">
+        <h2 className="text-xl font-bold mb-4">Select Your Coalition</h2>
+        <div className="flex flex-row gap-4">
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            onClick={() => onSelect("Allies")}
+          >
+            Blue (Allies)
+          </button>
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            onClick={() => onSelect("Enemies")}
+          >
+            Red (Enemies)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function App() {
+  const [coalition, setCoalition] = React.useState(settingsStore.getState().coalition);
+  React.useEffect(() => {
+    const unsub = settingsStore.subscribe((state) => {
+      setCoalition(state.coalition);
+    });
+    return () => unsub();
+  }, []);
+
+  if (!coalition) {
+    return <CoalitionModal onSelect={c => settingsStore.setState({ coalition: c })} />;
+  }
+
   return (
     <div className="bg-gray-700 max-w-full max-h-full w-full h-full">
       <Switch>

@@ -14,3 +14,4 @@ yarn-error.log*
 /config.json
 /sneaker-server
 /state.json
+.claude/

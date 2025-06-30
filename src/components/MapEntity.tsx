@@ -19,9 +19,10 @@ import {
   trackStore,
 } from "../stores/TrackStore";
 import { Entity } from "../types/entity";
-import { getBearingMap, getCardinal, getFlyDistance } from "../util";
+import { getBearingMap, getCardinal, getFlyDistance, getTrackName, getDetailedTrackName } from "../util";
 import DetailedCoords from "./DetailedCoords";
 import { colorMode } from "./MapIcon";
+import { settingsStore } from "../stores/SettingsStore";
 
 export const iconCache: Record<string, string> = {};
 
@@ -43,6 +44,8 @@ export function EntityInfo({
   const [addTagText, setAddTagText] = useState("");
   const inputRef = useRef(null);
   const isEnterPressed = useKeyPress("Enter");
+  const userCoalition = settingsStore((state) => state.coalition);
+  const isOwnCoalition = entity.coalition === userCoalition;
 
   useEffect(() => {
     if (!inputRef.current) return;
@@ -80,7 +83,7 @@ export function EntityInfo({
   return (
     <div className="flex flex-col bg-gray-300 border border-gray-500 shadow select-none rounded-sm">
       <div className="p-2 bg-gray-400 text-sm flex flex-row gap-2">
-        <b>{entity.group}</b>
+        <b>{isOwnCoalition ? entity.group : getTrackName(entity, false)}</b>
         <button
           className="p-1 text-xs bg-red-300 border border-red-400 ml-auto"
           onClick={() => {
@@ -91,14 +94,16 @@ export function EntityInfo({
         </button>
       </div>
       <div className="p-2 flex flex-row">
-        <div className="flex flex-col pr-2">
-          <div>{entity.name}</div>
+      <div className="flex flex-col pr-2">
+      {isOwnCoalition ? (
+        <>
+          <div>Track: {getTrackName(entity, true)}</div>
+          <div>Aircraft: {entity.name}</div>
+          {track && <div>{entity.pilot}</div>}
           {track && (
             <>
-              <div>{entity.pilot}</div>
               <div>
-                Heading:{" "}
-                {Math.round(entity.heading).toString().padStart(3, "0")}
+                Heading: {Math.round(entity.heading).toString().padStart(3, "0")}
                 {getCardinal(entity.heading)}
               </div>
               <div>Altitude: {Math.round(entity.altitude * 3.28084)}</div>
@@ -106,7 +111,20 @@ export function EntityInfo({
             </>
           )}
           <div>ID: {entity.id}</div>
-        </div>
+        </>
+      ) : (
+        <>
+          <div>Track: {getTrackName(entity, false)}</div>
+          {track && (
+            <>
+              <div>Altitude: {Math.round(entity.altitude * 3.28084)}</div>
+              <div>GS: {Math.round(estimatedSpeed(track))}</div>
+            </>
+          )}
+          <div>ID: {entity.id}</div>
+        </>
+      )}
+    </div>
         {track && (
           <div className="flex flex-col border-l border-black px-2 gap-1 flex-grow">
             <button
