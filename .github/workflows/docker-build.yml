@@ -3,23 +3,26 @@ name: Build and Push Docker Image
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
-  build:
+  docker-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '18'
+          cache: 'npm'
 
-      - name: Install frontend dependencies
+      - name: Install dependencies
         run: npm ci
 
       - name: Build frontend
@@ -33,9 +36,14 @@ jobs:
       - name: Build Go binary
         run: go build -o sneaker ./cmd/sneaker-server/main.go
 
-      - name: Extract version from package.json
-        id: pkg
-        run: echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -44,21 +52,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image
-        run: |
-          docker build -t ghcr.io/vcsg8/sneaker:${{ steps.pkg.outputs.version }} -t ghcr.io/vcsg8/sneaker:latest .
+      - name: Set lowercase repository name
+        id: repo
+        run: echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
-      - name: Push Docker image (version)
-        run: docker push ghcr.io/vcsg8/sneaker:${{ steps.pkg.outputs.version }}
-
-      - name: Push Docker image (latest)
-        run: docker push ghcr.io/vcsg8/sneaker:latest
-
-      - name: Save Docker image as artifact
-        run: docker save ghcr.io/vcsg8/sneaker:${{ steps.pkg.outputs.version }} | gzip > sneaker-image.tar.gz
-
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v3
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          name: sneaker-docker-image
-          path: sneaker-image.tar.gz 
+          images: ghcr.io/${{ steps.repo.outputs.repository }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Upload Go binary as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sneaker-go-binary
+          path: sneaker
+          retention-days: 7 
