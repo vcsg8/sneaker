@@ -1,0 +1,28 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  default:
+    cmds:
+      - echo "{{.GREETING}}"
+    silent: true
+
+  docker:build:
+    desc: Build the Docker image for sneaker
+    cmds:
+      - docker build -t sneaker:local .
+
+  docker:up:
+    desc: Run the sneaker server using docker-compose
+    cmds:
+      - docker-compose up --build
+
+  build:
+    desc: Build frontend (webpack) and Go backend
+    cmds:
+      - npx webpack build
+      - go build -o sneaker ./cmd/sneaker-server/main.go

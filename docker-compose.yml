@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  sneaker-server:
+    build: .
+    container_name: sneaker-server
+    volumes:
+      - ./test-config.json:/config/config.json:ro
+    ports:
+      - "7788:7788"
+    restart: unless-stopped 

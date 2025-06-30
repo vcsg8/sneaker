@@ -1,8 +1,24 @@
 {
   "servers": [
     {
-      "name": "s3-vcsg8",
+      "name": "S3",
       "hostname": "s3.vcsg8.com",
+      "port": 42674,
+      "radar_refresh_rate": 5,
+      "enable_friendly_ground_units": true,
+      "enable_enemy_ground_units": true
+    },
+    {
+      "name": "S2",
+      "hostname": "s2.vcsg8.com",
+      "port": 42674,
+      "radar_refresh_rate": 5,
+      "enable_friendly_ground_units": true,
+      "enable_enemy_ground_units": true
+    },
+    {
+      "name": "S1",
+      "hostname": "s1.vcsg8.com",
       "port": 42674,
       "radar_refresh_rate": 5,
       "enable_friendly_ground_units": true,
